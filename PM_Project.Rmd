@@ -1,0 +1,137 @@
+# Practical Machine Learning Course Project 
+
+## Introduction
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. 
+
+The participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: 
+
+* Class-A Exactly according to the specification.
+* Class-B Throwing the elbows to the front.
+* Class-C Lifting the dumbbell only halfway.
+* Class-D Lowering the dumbbell only halfway.
+* Class-E Throwing the hips to the front.
+
+
+### Loading the Data and Preparation
+
+Load the caret library for use in the analysis. 
+
+```{r message=FALSE}
+library(caret)
+library(randomForest)
+```
+
+#### Read in the training and test data. 
+```{r}
+pml_train <- read.csv("pml-training.csv")
+pml_test <- read.csv("pml-testing.csv")
+```
+
+**Below I will divide the training set into two separate parts for training and cross validation.**
+
+```{r}
+set.seed(10)
+inTrain <- createDataPartition(y=pml_train$classe, p=0.75, list=F)
+pml_train1 <- pml_train[inTrain, ]
+pml_train2 <- pml_train[-inTrain, ]
+```
+
+**At this point, I need to remove the near-zero values that will have little value in the predictions.** 
+
+```{r}
+nzv <- nearZeroVar(pml_train1)
+pml_train1 <- pml_train1[, -nzv]
+pml_train2 <- pml_train2[, -nzv]
+```
+
+
+```{r}
+mostlyNA <- sapply(pml_train1, function(x) mean(is.na(x))) > 0.95
+pml_train1 <- pml_train1[, mostlyNA==F]
+pml_train2 <- pml_train2[, mostlyNA==F]
+```
+
+
+```{r}
+pml_train1 <- pml_train1[, -(1:5)]
+pml_train2 <- pml_train2[, -(1:5)]
+```
+
+**Building Model**
+Utilizing Random Forest package to aid in prediction analysis.
+
+```{r}
+fitControl <- trainControl(method="cv", number=3)
+
+
+fit <- train(classe ~ ., data=pml_train1, method="rf", ntree=200, trControl=fitControl)
+```
+
+
+```{r}
+fit$finalModel
+```
+
+```{r}
+pred_r <- predict(fit, newdata=pml_train2)
+
+
+confusionMatrix(pml_train2$classe, pred_r)
+```
+**Accuracy rate of 99.41%.** 
+
+
+
+**As performed previously, we need to remove the near-zero values that will have little value.**
+```{r}
+
+nzv <- nearZeroVar(pml_train)
+pml_train <- pml_train[, -nzv]
+pml_test <- pml_test[, -nzv]
+
+
+mostlyNA <- sapply(pml_train, function(x) mean(is.na(x))) > 0.95
+pml_train <- pml_train[, mostlyNA==F]
+pml_test <- pml_test[, mostlyNA==F]
+
+```
+
+#### Train Model
+Train model with random forest due to its highly accuracy rate.
+
+```{r}
+
+
+pml_train <- pml_train[, -(1:5)]
+pml_test <- pml_test[, -(1:5)]
+
+
+fitControl <- trainControl(method="cv", number=3)
+fit <- train(classe ~ ., data=pml_train, method="rf", ntree=200, trControl=fitControl)
+```
+
+### **Prediction Results**
+
+
+```{r echo=FALSE}
+
+pred_results <- predict(fit, newdata=pml_test)
+
+
+pred_results <- as.character(pred_results)
+
+```
+
+```{r}
+pred_results
+
+```
+
+
+
+
+
+
+
+
